@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="refresh" content="100" />
+  <title>Cayman Info + News Ticker</title>
+  <style>
+    :root {
+      --panel: #1f1f1f;
+      --text: #f3f3f3;
+      --accent: #ffb703;
+      --muted: #bdbdbd;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #101010;
+      color: var(--text);
+    }
+
+    .ticker-wrap {
+      width: 100%;
+      background: var(--panel);
+      border-bottom: 1px solid #2d2d2d;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .ticker-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #2d2d2d;
+      background: #171717;
+      font-size: 0.95rem;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #ef476f;
+      box-shadow: 0 0 10px rgba(239, 71, 111, 0.8);
+    }
+
+    .ticker-label {
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .status {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .speed-controls {
+      display: inline-flex;
+      gap: 6px;
+      margin-left: 8px;
+    }
+
+    .speed-btn {
+      border: 1px solid #3a3a3a;
+      background: #222;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+
+    .speed-btn:hover {
+      border-color: #565656;
+    }
+
+    .speed-btn.active {
+      background: #353535;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .ticker-track-wrap {
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+      height: 54px;
+      display: flex;
+      align-items: center;
+    }
+
+    .ticker-track {
+      display: inline-flex;
+      align-items: center;
+      gap: 28px;
+      padding-left: 100%;
+      animation: scroll 140s linear infinite;
+      will-change: transform;
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 1rem;
+    }
+
+    .ticker-item:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .bullet {
+      color: var(--accent);
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 0;
+      line-height: 0;
+    }
+
+    iframe {
+      border: 0;
+      vertical-align: top;
+    }
+
+    @keyframes scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+
+    @media (max-width: 640px) {
+      .ticker-track-wrap { height: 50px; }
+      .ticker-item { font-size: 0.92rem; }
+      .speed-controls { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="ticker-wrap">
+    <header class="ticker-header">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="ticker-label">Live Headlines</span>
+      <div class="speed-controls" id="speedControls" aria-label="Ticker speed">
+        <button class="speed-btn" type="button" data-speed="1">Full</button>
+        <button class="speed-btn active" type="button" data-speed="2">Half</button>
+        <button class="speed-btn" type="button" data-speed="4">Quarter</button>
+      </div>
+      <span class="status" id="statusText">Loading feeds...</span>
+    </header>
+
+    <section class="ticker-track-wrap" aria-label="News ticker">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </section>
+  </main>
+
+  <section class="content">
+    <iframe src="https://www.weather.gov.ky/radar" width="50%" height="600"></iframe><iframe src="https://cdn.star.nesdis.noaa.gov/GOES16/ABI/SECTOR/car/13/GOES16-CAR-13-1000x1000.gif" width="50%" height="600"></iframe>
+    <iframe src="https://www.cruisemapper.com/?poi=25" width="50%" height="800"></iframe><iframe src="https://www.caymanport.com/wp-content/uploads/webcam/CamRWTWashPier21.jpg" width="50%" height="800"></iframe>
+    <iframe src="https://www.cruisemapper.com/ports/grand-cayman-island-port-25?tab-schedule" width="50%" height="800"></iframe><iframe src="https://www.nhc.noaa.gov/" width="50%" height="800"></iframe>
+    <iframe src="https://www.caymanport.com/wp-content/uploads/webcam/CamRWTWashPier21.jpg" width="100%" height="800"></iframe>
+  </section>
+
+  <script>
+    const FEEDS = [
+      "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+      "https://feeds.bbci.co.uk/news/world/rss.xml",
+      "https://www.reuters.com/world/rss"
+    ];
+
+    const MAX_ITEMS_PER_FEED = 8;
+    const BASE_DURATION_DESKTOP = 70;
+    const BASE_DURATION_MOBILE = 85;
+    const FALLBACK_ITEMS = [
+      { title: "Welcome: Add your feed URLs in the FEEDS array.", link: "#" },
+      { title: "If a feed fails, the ticker still runs with available sources.", link: "#" },
+      { title: "Use a local web server for best browser compatibility.", link: "#" }
+    ];
+
+    const tickerTrack = document.getElementById("tickerTrack");
+    const statusText = document.getElementById("statusText");
+    const speedControls = document.getElementById("speedControls");
+    let speedFactor = 2;
+
+    function applyTickerSpeed() {
+      const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const base = isMobile ? BASE_DURATION_MOBILE : BASE_DURATION_DESKTOP;
+      tickerTrack.style.animationDuration = `${base * speedFactor}s`;
+    }
+
+    function setSpeed(factor) {
+      speedFactor = factor;
+      for (const btn of speedControls.querySelectorAll(".speed-btn")) {
+        btn.classList.toggle("active", Number(btn.dataset.speed) === factor);
+      }
+      applyTickerSpeed();
+    }
+
+    async function fetchFeedItems(rssUrl) {
+      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(rssUrl);
+      const response = await fetch(proxyUrl, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Feed request failed (${response.status})`);
+      }
+
+      const xmlText = await response.text();
+      const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+      const parseError = xml.querySelector("parsererror");
+      if (parseError) {
+        throw new Error("Invalid XML feed response");
+      }
+
+      return [...xml.querySelectorAll("item")]
+        .slice(0, MAX_ITEMS_PER_FEED)
+        .map((item) => ({
+          title: item.querySelector("title")?.textContent?.trim() || "Untitled",
+          link: item.querySelector("link")?.textContent?.trim() || "#"
+        }))
+        .filter((x) => x.title);
+    }
+
+    function buildTicker(items) {
+      tickerTrack.innerHTML = "";
+      const list = items.length ? items : FALLBACK_ITEMS;
+      const loopItems = [...list, ...list];
+
+      for (const item of loopItems) {
+        const anchor = document.createElement("a");
+        anchor.className = "ticker-item";
+        anchor.href = item.link;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+
+        const bullet = document.createElement("span");
+        bullet.className = "bullet";
+        bullet.textContent = "●";
+
+        const title = document.createElement("span");
+        title.textContent = item.title;
+
+        anchor.appendChild(bullet);
+        anchor.appendChild(title);
+        tickerTrack.appendChild(anchor);
+      }
+    }
+
+    async function initTicker() {
+      applyTickerSpeed();
+      statusText.textContent = "Loading feeds...";
+      const allItems = [];
+      const results = await Promise.allSettled(FEEDS.map(fetchFeedItems));
+      let successCount = 0;
+
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          successCount += 1;
+          allItems.push(...result.value);
+        }
+      }
+
+      if (!allItems.length) {
+        buildTicker(FALLBACK_ITEMS);
+        statusText.textContent = "No feeds loaded (showing fallback items)";
+        return;
+      }
+
+      buildTicker(allItems);
+      statusText.textContent = `Loaded ${successCount}/${FEEDS.length} sources`;
+    }
+
+    initTicker().catch((error) => {
+      console.error(error);
+      buildTicker(FALLBACK_ITEMS);
+      statusText.textContent = "Error loading feeds (showing fallback items)";
+    });
+
+    speedControls.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) return;
+      const factor = Number(target.dataset.speed);
+      if (![1, 2, 4].includes(factor)) return;
+      setSpeed(factor);
+    });
+
+    window.addEventListener("resize", applyTickerSpeed);
+  </script>
+</body>
+</html>
