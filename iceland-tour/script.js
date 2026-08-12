@@ -12,10 +12,8 @@ nav.querySelectorAll('a').forEach((link) => link.addEventListener('click', () =>
 }));
 
 const timers = [
-  { target: new Date('2026-08-12T16:47:00Z').getTime(), fields: ['start-days', 'start-hours', 'start-minutes', 'start-seconds'] },
-  { target: new Date('2026-08-12T17:48:00Z').getTime(), fields: ['total-days', 'total-hours', 'total-minutes', 'total-seconds'] },
-  { target: new Date('2026-08-12T17:12:00Z').getTime(), fields: ['uk-start-days', 'uk-start-hours', 'uk-start-minutes', 'uk-start-seconds'] },
-  { target: new Date('2026-08-12T18:10:00Z').getTime(), fields: ['uk-max-days', 'uk-max-hours', 'uk-max-minutes', 'uk-max-seconds'] },
+  { target: new Date('2027-08-02T07:40:41Z').getTime(), fields: ['start-days', 'start-hours', 'start-minutes', 'start-seconds'] },
+  { target: new Date('2027-08-02T08:44:47Z').getTime(), fields: ['total-days', 'total-hours', 'total-minutes', 'total-seconds'] },
 ];
 function updateCountdown() {
   timers.forEach(({ target, fields }) => {
